@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>HeartSync Register</title>
+</head>
+
+<body>
+
+<h1>❤️ Create HeartSync Account</h1>
+
+<form method="POST">
+    {% csrf_token %}
+
+    {{ form.as_p }}
+
+    <button type="submit">
+        Register
+    </button>
+
+</form>
+
+</body>
+</html>

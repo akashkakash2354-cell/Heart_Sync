@@ -8,8 +8,7 @@ from .models import Couple, Message
 
 class ChatConsumer(WebsocketConsumer):
 
-    def connect(self):
-
+     def connect(self):
         self.couple_id = self.scope["url_route"]["kwargs"]["couple_id"]
         self.room_group_name = f"chat_{self.couple_id}"
 
@@ -23,8 +22,7 @@ class ChatConsumer(WebsocketConsumer):
 
         self.accept()
 
-    def disconnect(self, close_code):
-
+     def disconnect(self, close_code):
         print("❌ DISCONNECTED:", close_code)
 
         async_to_sync(self.channel_layer.group_discard)(
@@ -32,12 +30,22 @@ class ChatConsumer(WebsocketConsumer):
             self.channel_name
         )
 
-    def receive(self, text_data):
 
+     def receive(self, text_data):
         print("🔥 RECEIVE CALLED")
         print("DATA:", text_data)
 
         data = json.loads(text_data)
+
+        if data.get("typing"):
+            async_to_sync(self.channel_layer.group_send)(
+                self.room_group_name,
+                {
+                    "type": "typing_message",
+                    "sender": self.scope["user"].username,
+                }
+            )
+            return
 
         user = self.scope["user"]
 
@@ -61,8 +69,7 @@ class ChatConsumer(WebsocketConsumer):
             }
         )
 
-    def chat_message(self, event):
-
+     def chat_message(self, event):
         print("🔥 CHAT MESSAGE:", event)
 
         self.send(
@@ -71,6 +78,15 @@ class ChatConsumer(WebsocketConsumer):
                     "message": event["message"],
                     "sender": event["sender"],
                     "seen": event.get("seen", False),
+                }
+            )
+        )
+     def typing_message(self, event):
+        self.send(
+            text_data=json.dumps(
+                {
+                    "typing": True,
+                    "sender": event["sender"],
                 }
             )
         )

@@ -71,7 +71,6 @@
 
 <div id="messages">
 
-
 {% for message in messages %}
 
 {% if message.sender == request.user %}
@@ -83,12 +82,13 @@
 <br>
 
 {% if message.seen %}
-    <small style="color:blue;">✓✓ Seen</small>
+<small style="color:blue;">✓✓ Seen</small>
 {% else %}
-    <small style="color:gray;">✓ Sent</small>
+<small style="color:gray;">✓ Sent</small>
 {% endif %}
 
 </div>
+
 {% else %}
 
 <div class="message other">
@@ -101,6 +101,8 @@
 {% endfor %}
 
 </div>
+
+<div id="typing" style="color:gray; font-style:italic;"></div>
 
 <div class="input-box">
 
@@ -142,6 +144,24 @@ chatSocket.onmessage = function(e){
     console.log("📩 MESSAGE RECEIVED:", e.data);
 
     const data = JSON.parse(e.data);
+    
+    if (data.typing) {
+
+        if (data.sender !== "{{ request.user.username }}") {
+
+        document.getElementById("typing").innerHTML =
+            data.sender + " is typing...";
+
+        setTimeout(function () {
+            document.getElementById("typing").innerHTML = "";
+        }, 1000);
+
+    }
+
+    return;
+}
+
+
 
     console.log(data);
 
@@ -174,6 +194,15 @@ if (data.sender === "{{ request.user.username }}") {
 const input =
 document.getElementById("message-input");
 
+input.oninput = function () {
+
+    chatSocket.send(
+        JSON.stringify({
+            typing: true
+        })
+    );
+
+};
 
 const button =
 document.getElementById("send-btn");

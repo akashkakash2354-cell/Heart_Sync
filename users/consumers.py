@@ -3,7 +3,8 @@ import json
 from channels.generic.websocket import WebsocketConsumer
 from asgiref.sync import async_to_sync
 
-from .models import Couple, Message
+from .models import Couple, Message, UserStatus
+
 
 
 class ChatConsumer(WebsocketConsumer):
@@ -19,11 +20,18 @@ class ChatConsumer(WebsocketConsumer):
             self.room_group_name,
             self.channel_name
         )
-
+        UserStatus.objects.update_or_create(
+            user=self.scope["user"],
+            defaults={"is_online": True}
+        )
         self.accept()
 
      def disconnect(self, close_code):
         print("❌ DISCONNECTED:", close_code)
+        UserStatus.objects.update_or_create(
+            user=self.scope["user"],
+            defaults={"is_online": False}
+        )
 
         async_to_sync(self.channel_layer.group_discard)(
             self.room_group_name,

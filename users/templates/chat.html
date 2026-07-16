@@ -68,6 +68,15 @@
 
 <h2>💬 HeartSync</h2>
 
+{% if status and status.is_online %}
+    <p style="color:green;">
+        🟢 {{ partner.username }} Online
+    </p>
+{% else %}
+    <p style="color:gray;">
+        ⚫ {{ partner.username }} Offline
+    </p>
+{% endif %}
 
 <div id="messages">
 

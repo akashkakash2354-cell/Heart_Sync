@@ -3,11 +3,11 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib import messages
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.models import User
-from .models import Invite, Couple
+from .models import Invite, Couple, UserStatus
 from .forms import InviteForm
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import logout
-from .models import Message
+from .models import Message, UserStatus
 from django.contrib.auth.decorators import login_required
 
 
@@ -232,24 +232,30 @@ def chat(request):
             )
 
         return redirect("chat")
-    
+
     Message.objects.filter(
-    couple=couple
+        couple=couple
     ).exclude(
-    sender=request.user
+        sender=request.user
     ).update(
-    seen=True
+        seen=True
     )
-    
+
     messages = Message.objects.filter(
         couple=couple
     ).order_by("created_at")
+
+    partner = couple.user2 if couple.user1 == request.user else couple.user1
+
+    status = UserStatus.objects.filter(user=partner).first()
 
     return render(
         request,
         "chat.html",
         {
             "messages": messages,
-            "couple": couple
+            "couple": couple,
+            "partner": partner,
+            "status": status,
         }
     )

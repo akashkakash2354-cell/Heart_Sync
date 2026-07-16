@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>HeartSync Dashboard</title>
+</head>
+
+<body>
+
+<h1>❤️ Welcome to HeartSync</h1>
+
+<h3>Welcome {{ request.user.username }}</h3>
+
+{% if couple %}
+    <h2>
+        ❤️ Connected with
+        {% if couple.user1 == request.user %}
+            {{ couple.user2.username }}
+        {% else %}
+            {{ couple.user1.username }}
+        {% endif %}
+    </h2>
+{% else %}
+    <p>💔 You are not connected with anyone yet.</p>
+{% endif %}
+
+<br>
+
+<a href="{% url 'send_invite' %}">
+    <button>❤️ Send Invite</button>
+</a>
+
+<a href="{% url 'pending_invites' %}">
+    <button>📨 Pending Invites</button>
+</a>
+
+<a href="{% url 'logout' %}">
+    <button>Logout</button>
+</a>
+
+<a href="{% url 'chat' %}">
+    <button>💬 Chat</button>
+</a>
+
+</body>
+</html>

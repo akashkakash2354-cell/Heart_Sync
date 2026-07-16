@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Send Invite</title>
+</head>
+<body>
+
+<h1>❤️ Send Invite</h1>
+
+<form method="POST">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Send Invite ❤️</button>
+</form>
+
+</body>
+</html>

@@ -1,0 +1,25 @@
+<h1>❤️ Pending Invites</h1>
+
+<p>Welcome {{ request.user.username }}</p>
+
+{% if invites %}
+
+    {% for invite in invites %}
+
+        <p>
+            {{ invite.sender.username }} sent you an invite ❤️
+        </p>
+
+        <a href="{% url 'accept_invite' invite.id %}">
+            <button>
+                Accept ❤️
+            </button>
+        </a>
+
+    {% endfor %}
+
+{% else %}
+
+    <p>No pending invite</p>
+
+{% endif %}

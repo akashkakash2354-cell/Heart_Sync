@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>HeartSync Chat</title>
+
+    <style>
+
+        body {
+            font-family: Arial;
+            background: #f0f2f5;
+        }
+
+        .chat-box {
+            width: 400px;
+            margin: 30px auto;
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+        }
+
+        .message {
+            padding: 10px 15px;
+            margin: 8px;
+            border-radius: 15px;
+            max-width: 70%;
+        }
+
+        .mine {
+            background: #dcf8c6;
+            margin-left: auto;
+            text-align: right;
+        }
+
+        .other {
+            background: #eee;
+            margin-right: auto;
+        }
+
+        .input-box {
+            display: flex;
+            margin-top: 20px;
+        }
+
+        input {
+            flex: 1;
+            padding: 10px;
+            border-radius: 20px;
+            border: 1px solid gray;
+        }
+
+        button {
+            margin-left: 10px;
+            border: none;
+            background: #ff4d88;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+
+<div class="chat-box">
+
+<h2>💬 HeartSync</h2>
+
+
+<div id="messages">
+
+
+{% for message in messages %}
+
+{% if message.sender == request.user %}
+
+<div class="message mine">
+<b>You</b><br>
+{{ message.text }}
+
+<br>
+
+{% if message.seen %}
+    <small style="color:blue;">✓✓ Seen</small>
+{% else %}
+    <small style="color:gray;">✓ Sent</small>
+{% endif %}
+
+</div>
+{% else %}
+
+<div class="message other">
+<b>{{ message.sender.username }}</b><br>
+{{ message.text }}
+</div>
+
+{% endif %}
+
+{% endfor %}
+
+</div>
+
+<div class="input-box">
+
+<input 
+id="message-input"
+placeholder="Type message..."
+>
+
+<button id="send-btn">
+Send ❤️
+</button>
+
+</div>
+
+
+</div>
+
+
+<a href="{% url 'dashboard' %}">Back</a>
+
+<script>
+
+console.log("CHAT JS LOADED");
+
+const coupleId = "{{ couple.id }}";
+
+const chatSocket = new WebSocket(
+    "ws://" + window.location.host + "/ws/chat/" + coupleId + "/"
+);
+
+chatSocket.onopen = function () {
+    console.log("✅ WebSocket Connected");
+};
+
+
+
+chatSocket.onmessage = function(e){
+
+    console.log("📩 MESSAGE RECEIVED:", e.data);
+
+    const data = JSON.parse(e.data);
+
+    console.log(data);
+
+   const div = document.createElement("div");
+
+if (data.sender === "{{ request.user.username }}") {
+
+    div.className = "message mine";
+
+    div.innerHTML =
+        "<b>You</b><br>" +
+        data.message +
+        "<br><small style='color:gray;'>✓ Sent</small>";
+
+} else {
+
+    div.className = "message other";
+
+    div.innerHTML =
+        "<b>" + data.sender + "</b><br>" +
+        data.message;
+
+}
+
+    document.getElementById("messages").appendChild(div);
+};
+
+
+
+const input =
+document.getElementById("message-input");
+
+
+const button =
+document.getElementById("send-btn");
+
+
+
+button.onclick = function(){
+
+    let msg = input.value.trim();
+
+
+    if(msg === ""){
+        return;
+    }
+
+
+    chatSocket.send(
+        JSON.stringify({
+            message: msg
+        })
+    );
+
+
+    input.value="";
+
+};
+
+
+</script>
+
+
+</body>
+</html>

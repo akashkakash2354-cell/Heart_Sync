@@ -9,7 +9,9 @@ from django.shortcuts import get_object_or_404
 from django.contrib.auth import logout
 from .models import Message, UserStatus
 from django.contrib.auth.decorators import login_required
-
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
+from .models import Message
 
 
 def register(request):
@@ -209,7 +211,6 @@ def accept_invite(request, invite_id):
 def logout_view(request):
     logout(request)
     return redirect("login")
-
 @login_required
 def chat(request):
 
@@ -221,18 +222,8 @@ def chat(request):
     if not couple:
         return redirect("dashboard")
 
-    if request.method == "POST":
-        text = request.POST.get("message")
 
-        if text:
-            Message.objects.create(
-                couple=couple,
-                sender=request.user,
-                text=text
-            )
-
-        return redirect("chat")
-
+    # MARK MESSAGE SEEN
     Message.objects.filter(
         couple=couple
     ).exclude(
@@ -241,19 +232,55 @@ def chat(request):
         seen=True
     )
 
-    messages = Message.objects.filter(
+
+    channel_layer = get_channel_layer()
+
+
+    last_message = Message.objects.filter(
+        couple=couple
+    ).exclude(
+        sender=request.user
+    ).last()
+
+
+    print("🔥 LAST MESSAGE:", last_message)
+
+
+    if last_message:
+
+        print("🔥 SENDING SEEN:", last_message.id)
+
+        async_to_sync(channel_layer.group_send)(
+            f"chat_{couple.id}",
+            {
+                "type": "seen_message",
+                "message_id": last_message.id,
+            }
+        )
+
+
+    chat_messages = Message.objects.filter(
         couple=couple
     ).order_by("created_at")
 
-    partner = couple.user2 if couple.user1 == request.user else couple.user1
 
-    status = UserStatus.objects.filter(user=partner).first()
+    partner = (
+        couple.user2
+        if couple.user1 == request.user
+        else couple.user1
+    )
+
+
+    status = UserStatus.objects.filter(
+        user=partner
+    ).first()
+
 
     return render(
         request,
         "chat.html",
         {
-            "messages": messages,
+            "messages": chat_messages,
             "couple": couple,
             "partner": partner,
             "status": status,

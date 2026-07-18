@@ -80,3 +80,21 @@ class UserStatus(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {'Online' if self.is_online else 'Offline'}"
+    
+    
+class WatchRoom(models.Model):
+    couple = models.OneToOneField(
+        Couple,
+        on_delete=models.CASCADE
+    )
+
+    youtube_url = models.URLField(blank=True)
+
+    current_time = models.FloatField(default=0)
+
+    is_playing = models.BooleanField(default=False)
+
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Watch Room {self.couple.id}"

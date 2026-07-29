@@ -1,506 +1,324 @@
-    <!DOCTYPE html>
-    <html>
-    <head>
-    <title>HeartSync Chat ❤️</title>
-
-    <style>
-
-    body{
-        font-family:Arial,sans-serif;
-        background:#f0f2f5;
-    }
-
-    .chat-box{
-        width:400px;
-        margin:30px auto;
-        background:white;
-        padding:20px;
-        border-radius:15px;
-        box-shadow:0 0 10px rgba(0,0,0,.2);
-    }
-
-
-    h2{
-        text-align:center;
-    }
-
-
-    #online-status{
-        color:gray;
-    }
-
-
-    #typing{
-        color:gray;
-        font-style:italic;
-        height:20px;
-    }
-
-
-    #messages{
-
-        height:450px;
-        overflow-y:auto;
-        border:1px solid #ddd;
-        padding:10px;
-        border-radius:10px;
-
-    }
-
-
-    .message{
-
-        padding:10px;
-        margin:8px;
-        border-radius:15px;
-        max-width:70%;
-
-    }
-
-
-    .mine{
-
-        background:#dcf8c6;
-        margin-left:auto;
-        text-align:right;
-
-    }
-
-
-    .other{
-
-        background:#eeeeee;
-    }
-
-
-    .input-box{
-
-        display:flex;
-        margin-top:15px;
-
-    }
-
-
-    input{
-
-        flex:1;
-        padding:10px;
-        border-radius:20px;
-
-    }
-
-
-    button{
-
-        margin-left:10px;
-        background:#ff4d88;
-        color:white;
-        border:none;
-        border-radius:20px;
-        padding:10px 20px;
-
-    }
-
-    </style>
-
-    </head>
-
-
-    <body>
-
-
-    <div class="chat-box">
-
-
-    <h2>💬 HeartSync</h2>
-
-    <h3 id="partner-name">
-        {{ partner.username }}
-    </h3>
-
-    <p id="online-status">
-    {% if status and status.is_online %}
-    🟢 Online
-    {% else %}
-    ⚫ Offline
-    {% endif %}
-    </p>
-
-    <div id="typing"></div>
-
-
-
-    <div id="messages">
-
-
-    {% for msg in messages %}
-
-
-    <div class="
-    {% if msg.sender == request.user %}
-    message mine
-    {% else %}
-    message other
-    {% endif %}
-    ">
-
-
-    <b>
-
-    {% if msg.sender == request.user %}
-
-    You
-
-    {% else %}
-
-    {{msg.sender.username}}
-
-    {% endif %}
-
-
-    </b>
-
-
-    <br>
-
-
-    {{msg.text}}
-
-
-
-    {% if msg.sender == request.user %}
-
-    <br>
-
-
-    <small 
-    id="msg-{{msg.id}}"
-    style="color:gray;">
-
-
-    {% if msg.seen %}
-
-    ✓✓ Seen
-
-    {% else %}
-
-    ✓ Sent
-
-    {% endif %}
-
-
-    </small>
-
-
-    {% endif %}
-
-
-
-    </div>
-
-
-    {% endfor %}
-
-
-
-    </div>
-
-
-
-    <div class="input-box">
-
-
-    <input
-    id="message-input"
-    placeholder="Type message..."
-    >
-
-
-    <button id="send-btn">
-    Send ❤️
-    </button>
-
-
-    </div>
-
-
-    <br>
-
-
-    <a href="{% url 'dashboard' %}">
-    ⬅ Back
-    </a>
-
-
-
-    </div>
-
-
-
-
-    <script>
-
-
-    console.log("🔥 CHAT JS LOADED");
-
-
-    const coupleId="{{couple.id}}";
-
-
-    const chatSocket=new WebSocket(
-
-    "ws://"+window.location.host+
-    "/ws/chat/"+coupleId+"/"
-
-    );
-
-
-
-    chatSocket.onopen=function(){
-
-    console.log("✅ Connected");
-
-    };
-
-
-
-    chatSocket.onmessage=function(e){
-
-
-    console.log("📩",e.data);
-
-
-
-    const data=JSON.parse(e.data);
-
-
-
-    // SEEN
-
-    if(data.seen){
-
-
-    const seen=document.getElementById(
-    "msg-"+data.message_id
-    );
-
-
-    if(seen){
-
-    seen.innerHTML="✓✓ Seen";
-    seen.style.color="blue";
-
-    }
-
-
-    return;
-
-    }
-
-
-
-
-   // ONLINE STATUS
-
-if (data.status) {
-
-    console.log("STATUS EVENT:", data);
-    console.log("Socket username:", data.username);
-    console.log("Current user:", "{{ request.user.username }}");
-
-    if (data.username !== "{{ request.user.username }}") {
-
-        let status = document.getElementById("online-status");
-
-        console.log("ELEMENT:", status);
-
-        if (data.status == "online") {
-            status.innerHTML = "🟢 Online";
-            status.style.color = "green";
-        } else {
-            status.innerHTML = "⚫ Offline";
-            status.style.color = "gray";
-        }
-    }
-
-    return;
+<!DOCTYPE html>
+<html>
+<head>
+<title>HeartSync Chat ❤️</title>
+
+<style>
+
+body{
+    font-family:Arial,sans-serif;
+    background:#f0f2f5;
 }
 
+.chat-box{
+    width:400px;
+    margin:30px auto;
+    background:white;
+    padding:20px;
+    border-radius:15px;
+    box-shadow:0 0 10px rgba(0,0,0,.2);
+}
+
+h2{
+    text-align:center;
+}
+
+#online-status{
+    color:gray;
+}
+
+#typing{
+    color:gray;
+    font-style:italic;
+    height:20px;
+}
+
+#messages{
+    height:450px;
+    overflow-y:auto;
+    border:1px solid #ddd;
+    padding:10px;
+    border-radius:10px;
+}
+
+.message{
+    padding:10px;
+    margin:8px;
+    border-radius:15px;
+    max-width:70%;
+}
+
+.mine{
+    background:#dcf8c6;
+    margin-left:auto;
+    text-align:right;
+}
+
+.other{
+    background:#eeeeee;
+}
+
+.input-box{
+    display:flex;
+    margin-top:15px;
+}
+
+input{
+    flex:1;
+    padding:10px;
+    border-radius:20px;
+}
+
+button{
+    margin-left:10px;
+    background:#ff4d88;
+    color:white;
+    border:none;
+    border-radius:20px;
+    padding:10px 20px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="chat-box">
+
+<h2>💬 HeartSync</h2>
+
+<h3>{{ partner.username }}</h3>
+
+<p id="online-status">
+{% if status and status.is_online %}
+🟢 Online
+{% else %}
+⚫ Offline
+{% endif %}
+</p>
+
+<div id="typing"></div>
+
+<div id="messages">
+
+{% for msg in messages %}
+
+<div class="{% if msg.sender == request.user %}message mine{% else %}message other{% endif %}">
+
+<b>
+{% if msg.sender == request.user %}
+You
+{% else %}
+{{ msg.sender.username }}
+{% endif %}
+</b>
+
+<br>
+
+{{ msg.text }}
+
+{% if msg.sender == request.user %}
+<br>
+
+<small id="msg-{{ msg.id }}" style="color:gray;">
+{% if msg.seen %}
+✓✓ Seen
+{% else %}
+✓ Sent
+{% endif %}
+</small>
+
+{% endif %}
+
+</div>
+
+{% endfor %}
+
+</div>
+
+<div class="input-box">
+
+<input
+id="message-input"
+placeholder="Type message..."
+>
+
+<button id="send-btn">
+Send ❤️
+</button>
+
+</div>
+
+<br>
+
+<a href="{% url 'dashboard' %}">
+⬅ Back
+</a>
+
+</div>
+
+<script>
+
+const coupleId="{{ couple.id }}";
+
+const chatSocket=new WebSocket(
+"ws://"+window.location.host+"/ws/chat/"+coupleId+"/"
+);
+
+chatSocket.onopen=function(){
+    console.log("✅ Connected");
+};
 
 
-    // TYPING
+chatSocket.onmessage = function(e){
 
+    console.log("📩", e.data);
 
+    const data = JSON.parse(e.data);
+
+    // --------------------
+    // Seen Status
+    // --------------------
+    if(data.seen){
+
+        const seen = document.getElementById(
+            "msg-" + data.message_id
+        );
+
+        if(seen){
+            seen.innerHTML = "✓✓ Seen";
+            seen.style.color = "blue";
+        }
+
+        return;
+    }
+
+    // --------------------
+    // Online Status
+    // --------------------
+    if(data.status){
+
+        if(data.username !== "{{ request.user.username }}"){
+
+            const status = document.getElementById("online-status");
+
+            if(data.status === "online"){
+
+                status.innerHTML = "🟢 Online";
+                status.style.color = "green";
+
+            }else{
+
+                status.innerHTML = "⚫ Offline";
+                status.style.color = "gray";
+            }
+
+        }
+
+        return;
+    }
+
+    // --------------------
+    // Typing
+    // --------------------
     if(data.typing){
 
+        if(data.sender !== "{{ request.user.username }}"){
 
-    if(data.sender !== "{{request.user.username}}"){
+            document.getElementById("typing").innerHTML =
+                data.sender + " is typing...";
 
+            setTimeout(function(){
 
-    document.getElementById(
-    "typing"
-    ).innerHTML=
-    data.sender+" is typing...";
+                document.getElementById("typing").innerHTML = "";
 
+            },1000);
 
+        }
 
-    setTimeout(function(){
-
-
-    document.getElementById(
-    "typing"
-    ).innerHTML="";
-
-
-    },1000);
-
-
-
+        return;
     }
 
+    // --------------------
+    // New Message
+    // --------------------
 
-    return;
+    const div = document.createElement("div");
 
-    }
+    if(data.sender === "{{ request.user.username }}"){
 
+        div.className = "message mine";
 
+        div.innerHTML =
+            "<b>You</b><br>" +
+            data.message +
+            "<br><small id='msg-"+data.id+"' style='color:gray;'>✓ Sent</small>";
 
+    }else{
 
-    // MESSAGE
+        div.className = "message other";
 
-
-    const div=document.createElement("div");
-
-
-
-    if(data.sender=="{{request.user.username}}"){
-
-
-    div.className="message mine";
-
-
-    div.innerHTML=
-
-    "<b>You</b><br>"+
-    data.message+
-    "<br><small id='msg-"+data.id+"' style='color:gray'>✓ Sent</small>";
-
+        div.innerHTML =
+            "<b>"+data.sender+"</b><br>" +
+            data.message;
 
     }
-
-    else{
-
-
-    div.className="message other";
-
-
-    div.innerHTML=
-
-    "<b>"+data.sender+"</b><br>"+
-    data.message;
-
-
-    }
-
-
-
-    document.getElementById(
-    "messages"
-    ).appendChild(div);
+    console.log(div);
+console.log(document.getElementById("messages"));
+    document.getElementById("messages").appendChild(div);
 
     const box = document.getElementById("messages");
-
     box.scrollTop = box.scrollHeight;
+};
 
 
+// --------------------
+// Typing Event
+// --------------------
 
-    };
+let typingTimer;
 
-
-
-    /* typing send */
-
-
-    let typingTimer;
-
-
-    document.getElementById(
-    "message-input"
-    ).oninput=function(){
-
-
+document.getElementById("message-input").oninput = function(){
 
     chatSocket.send(JSON.stringify({
-
-    typing:true
-
+        typing:true
     }));
-
-
 
     clearTimeout(typingTimer);
 
+    typingTimer = setTimeout(function(){
 
-
-    typingTimer=setTimeout(function(){
-
-
-    document.getElementById(
-    "typing"
-    ).innerHTML="";
-
+        document.getElementById("typing").innerHTML="";
 
     },1000);
 
+};
 
 
-    };
+// --------------------
+// Send Message
+// --------------------
 
+document.getElementById("send-btn").onclick = function(){
 
+    let input = document.getElementById("message-input");
 
+    let msg = input.value.trim();
 
-
-    /* send message */
-
-
-    document.getElementById(
-    "send-btn"
-    ).onclick=function(){
-
-
-
-    let input=document.getElementById(
-    "message-input"
-    );
-
-
-
-    let msg=input.value.trim();
-
-
-
-    if(msg=="")
-    return;
-
-
+    if(msg===""){
+        return;
+    }
 
     chatSocket.send(JSON.stringify({
-
-    message:msg
-
+        message:msg
     }));
-
 
     input.value="";
 
+};
 
-    };
+</script>
 
-
-
-    </script>
-
-
-    </body>
-
-    </html>
+</body>
+</html>

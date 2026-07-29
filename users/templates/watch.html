@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<title>HeartSync Watch ❤️</title>
+
+<style>
+
+body{
+    font-family:Arial;
+    background:#f0f2f5;
+}
+
+.watch-box{
+    width:500px;
+    margin:40px auto;
+    background:white;
+    padding:20px;
+    border-radius:15px;
+    box-shadow:0 0 10px gray;
+}
+
+input{
+    width:75%;
+    padding:10px;
+    border-radius:10px;
+}
+
+button{
+    padding:10px 20px;
+    background:#ff4d88;
+    color:white;
+    border:none;
+    border-radius:10px;
+}
+
+#player{
+    margin-top:20px;
+    border-radius:15px;
+    overflow:hidden;
+}
+
+</style>
+
+</head>
+
+
+<body>
+
+
+<div class="watch-box">
+
+
+<h2>
+🎬 HeartSync Watch Together ❤️
+</h2>
+
+
+<p>
+TEST VIDEO ID: {{ video_id }}
+</p>
+
+
+
+<form method="POST">
+
+{% csrf_token %}
+
+<input 
+type="text"
+name="youtube_url"
+placeholder="Paste YouTube link">
+
+
+<button>
+Add Video 🎬
+</button>
+
+
+</form>
+
+
+
+{% if video_id %}
+
+
+<hr>
+
+
+<h3>
+Now Watching 🎥
+</h3>
+
+
+<div id="player"></div>
+
+<br>
+
+<button id="fullscreen-btn">
+⛶ Fullscreen
+</button>
+
+
+<script src="https://www.youtube.com/iframe_api"></script>
+
+<script>
+
+let player;
+let playerReady = false;
+
+let isRemoteAction = false;
+let remoteTimer = null;
+
+let lastTime = 0;
+let seekTimer;
+
+
+
+const videoId = "{{ video_id }}";
+console.log("VIDEO ID =", videoId);
+const roomId = "{{ room.id }}";
+
+
+
+const watchSocket = new WebSocket(
+
+    "ws://" +
+    window.location.host +
+    "/ws/watch/" +
+    roomId +
+    "/"
+
+);
+
+
+
+watchSocket.onopen = function(){
+
+    console.log("WATCH SOCKET CONNECTED ❤️");
+
+};
+
+
+
+watchSocket.onmessage = function(event){
+
+
+    let data = JSON.parse(event.data);
+
+
+    console.log("WATCH EVENT:", data);
+
+
+
+    if(!playerReady){
+
+        return;
+
+    }
+
+
+
+    // REMOTE PLAY ❤️
+
+if(data.action === "play"){
+
+
+    console.log("REMOTE PLAY ❤️");
+
+
+    isRemoteAction = true;
+
+
+    player.seekTo(
+    data.time,
+    true
+);
+
+setTimeout(()=>{
+
+    player.playVideo();
+
+},500);
+
+
+    
+
+
+
+    clearTimeout(remoteTimer);
+
+
+    remoteTimer = setTimeout(()=>{
+
+    isRemoteAction = false;
+
+},5000);
+
+
+}
+
+if(data.action === "seek"){
+
+    console.log("REMOTE SEEK ❤️");
+
+
+    isRemoteAction = true;
+
+
+    player.seekTo(
+        data.time,
+        true
+    );
+
+
+    clearTimeout(remoteTimer);
+
+
+    remoteTimer=setTimeout(()=>{
+
+    isRemoteAction=false;
+
+},5000);
+
+}
+
+    // REMOTE PAUSE ❤️
+
+if(data.action === "pause"){
+
+
+    console.log("REMOTE PAUSE ❤️");
+
+
+    isRemoteAction = true;
+
+
+    player.pauseVideo();
+
+
+
+    setTimeout(()=>{
+
+
+        player.seekTo(
+
+            data.time,
+
+            true
+
+        );
+
+
+    },100);
+
+
+
+    clearTimeout(remoteTimer);
+
+
+    remoteTimer = setTimeout(()=>{
+
+    isRemoteAction = false;
+
+},5000);
+
+
+}
+
+}
+
+
+
+
+
+
+function onYouTubeIframeAPIReady(){
+
+
+    console.log("YOUTUBE API READY");
+
+
+    const playerElement = document.getElementById("player");
+playerElement.setAttribute("allowfullscreen", "");
+    player = new YT.Player(
+
+        "player",
+
+        {
+
+
+            height:"260",
+
+            width:"460",
+
+            videoId:videoId,
+            playerVars:{
+                playsinline:1,
+                fs:1,
+                controls:1
+
+},
+
+            events:{
+
+
+                onReady:onPlayerReady,
+
+
+                onStateChange:onPlayerStateChange
+
+
+            }
+
+
+        }
+
+    );
+
+
+}
+
+
+
+
+
+
+
+function onPlayerReady(){
+
+
+    console.log("PLAYER READY ❤️");
+
+
+    playerReady = true;
+
+
+}
+
+setInterval(()=>{
+
+    if(playerReady && !isRemoteAction){
+
+        let current = player.getCurrentTime();
+
+
+        if(Math.abs(current-lastTime) > 2){
+
+            console.log("SEEK DETECTED ❤️", current);
+
+
+            watchSocket.send(JSON.stringify({
+
+                action:"seek",
+
+                time:current
+
+            }));
+
+        }
+
+
+        lastTime=current;
+
+    }
+
+
+},1000);
+
+function onPlayerStateChange(event){
+
+    console.log("STATE:", event.data);
+
+
+
+    // PLAY
+
+    if(event.data === YT.PlayerState.PLAYING){
+
+
+        console.log("PLAYING ▶️");
+
+
+        if(isRemoteAction){
+
+    console.log("REMOTE PLAY IGNORE");
+
+    isRemoteAction = false;
+
+    return;
+
+}
+
+
+        watchSocket.send(JSON.stringify({
+
+            action:"play",
+
+            time:player.getCurrentTime()
+
+        }));
+
+
+    }
+
+
+
+
+    // PAUSE
+
+    if(event.data === YT.PlayerState.PAUSED){
+
+
+        console.log("PAUSED ⏸️");
+
+
+        if(isRemoteAction){
+
+    console.log("REMOTE PAUSE IGNORE");
+
+    return;
+
+}
+
+
+
+        watchSocket.send(JSON.stringify({
+
+            action:"pause",
+
+            time:player.getCurrentTime()
+
+        }));
+
+    }
+
+}
+
+document.getElementById("fullscreen-btn").onclick = function(){
+
+    if(!playerReady){
+        alert("Video loading...");
+        return;
+    }
+
+
+    const iframe = player.getIframe();
+
+
+    if(!iframe){
+        alert("Iframe not found");
+        return;
+    }
+
+
+    iframe.allowFullscreen = true;
+
+
+    iframe.requestFullscreen()
+    .then(()=>{
+        console.log("FULLSCREEN SUCCESS ❤️");
+    })
+    .catch((err)=>{
+        console.log("FULLSCREEN ERROR:", err);
+    });
+
+};
+
+
+
+</script>
+
+{% endif %}
+
+
+
+<br><br>
+
+
+<a href="{% url 'dashboard' %}">
+⬅ Back
+</a>
+
+
+
+</div>
+
+
+</body>
+
+</html>

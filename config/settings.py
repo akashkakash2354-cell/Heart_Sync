@@ -33,17 +33,18 @@ ALLOWED_HOSTS = []
 INSTALLED_APPS = [
 
     "daphne",
-
+    "channels",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
 
-    "channels",
+    
     "users",
-
+    "watchroom",
     "django.contrib.staticfiles",
+    
 ]
 
 
@@ -137,3 +138,5 @@ CHANNEL_LAYERS = {
         "BACKEND": "channels.layers.InMemoryChannelLayer",
     },
 }
+
+YOUTUBE_API_KEY = "AIzaSyxxxxxxxxxxxx"

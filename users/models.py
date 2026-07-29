@@ -83,18 +83,28 @@ class UserStatus(models.Model):
     
     
 class WatchRoom(models.Model):
+
     couple = models.OneToOneField(
         Couple,
         on_delete=models.CASCADE
     )
 
-    youtube_url = models.URLField(blank=True)
+    youtube_url = models.URLField(
+        blank=True,
+        null=True
+    )
 
-    current_time = models.FloatField(default=0)
+    current_time = models.FloatField(
+        default=0
+    )
 
-    is_playing = models.BooleanField(default=False)
+    is_playing = models.BooleanField(
+        default=False
+    )
 
-    updated_at = models.DateTimeField(auto_now=True)
+    updated_at = models.DateTimeField(
+        auto_now=True
+    )
 
     def __str__(self):
-        return f"Watch Room {self.couple.id}"
+        return f"{self.couple}"

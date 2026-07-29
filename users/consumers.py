@@ -146,4 +146,68 @@ class ChatConsumer(WebsocketConsumer):
         self.send(text_data=json.dumps({
         "seen": True,
         "message_id": event["message_id"],
-    }))
+        }))
+        
+        
+        
+        
+class WatchConsumer(WebsocketConsumer):
+
+    def connect(self):
+
+        self.room_id = self.scope["url_route"]["kwargs"]["room_id"]
+
+        self.room_group_name = f"watch_{self.room_id}"
+
+        async_to_sync(self.channel_layer.group_add)(
+            self.room_group_name,
+            self.channel_name
+        )
+
+        self.accept()
+
+        print("🎬 WATCH CONNECTED:", self.room_group_name)
+
+
+    def disconnect(self, close_code):
+
+        async_to_sync(self.channel_layer.group_discard)(
+            self.room_group_name,
+            self.channel_name
+        )
+
+        print("❌ WATCH DISCONNECTED")
+
+
+    def receive(self, text_data):
+
+        data = json.loads(text_data)
+
+        print("🎬 WATCH ACTION:", data)
+
+
+        async_to_sync(self.channel_layer.group_send)(
+            self.room_group_name,
+            {
+                "type": "watch_event",
+                "action": data["action"],
+                "time": data.get("time", 0),
+                "sender": self.channel_name,
+            }
+        )
+
+
+    def watch_event(self, event):
+
+        # same user/tab ku send panna vendam
+        if event["sender"] == self.channel_name:
+            return
+
+
+        self.send(text_data=json.dumps({
+
+            "action": event["action"],
+
+            "time": event["time"]
+
+        }))

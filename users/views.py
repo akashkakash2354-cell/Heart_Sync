@@ -12,16 +12,18 @@ from django.contrib.auth.decorators import login_required
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from .models import Message
+from .models import WatchRoom, Couple
+import re
+import urllib.parse
+
 
 
 def register(request):
     if request.method == "POST":
-        form = UserCreationForm(request.POST)
 
-        if form.is_valid():
-            form.save()
-            messages.success(request, "Account created successfully!")
-            return redirect("login")
+        
+        messages.success(request, "Account created successfully!")
+        return redirect("login")
 
     else:
         form = UserCreationForm()
@@ -113,63 +115,7 @@ def send_invite(request):
                 messages.error(request, "User not found!")
 
     return render(request, "send_invite.html", {"form": form})
-# def send_invite(request):
-#     form = InviteForm()
 
-#     if request.method == "POST":
-#         form = InviteForm(request.POST)
-
-#         if form.is_valid():
-#             username = form.cleaned_data["username"]
-
-#             try:
-#                 receiver = User.objects.get(username=username)
-
-#                 # உங்களுக்கே invite அனுப்ப முடியாது
-#                 if receiver == request.user:
-#                     messages.error(request, "You cannot invite yourself!")
-#                     return redirect("send_invite")
-
-#                 # ஏற்கனவே pending invite இருக்கிறதா?
-#                 if Invite.objects.filter(
-#                     sender=request.user,
-#                     receiver=receiver,
-#                     accepted=False
-#                 ).exists():
-#                     messages.warning(request, "Invite already sent!")
-#                     return redirect("send_invite")
-
-#                 # ஏற்கனவே couple ஆக connect ஆகியிருக்கிறாங்களா?
-#                 if Couple.objects.filter(
-#                     user1=request.user,
-#                     user2=receiver
-#                 ).exists() or Couple.objects.filter(
-#                     user1=receiver,
-#                     user2=request.user
-#                 ).exists():
-#                     messages.warning(request, "You are already connected ❤️")
-#                     return redirect("send_invite")
-
-#                 # புதிய invite create
-#                 Invite.objects.create(
-#                     sender=request.user,
-#                     receiver=receiver
-#                 )
-
-#                 messages.success(
-#                     request,
-#                     "Invite sent successfully! ❤️"
-#                 )
-
-#                 return redirect("dashboard")
-
-#             except User.DoesNotExist:
-#                 messages.error(
-#                     request,
-#                     "User not found!"
-#                 )
-
-#     return render(request, "send_invite.html", {"form": form})
 
 @login_required
 def pending_invites(request):
@@ -284,5 +230,59 @@ def chat(request):
             "couple": couple,
             "partner": partner,
             "status": status,
+        }
+    )
+    
+@login_required
+def watch_room(request):
+
+    couple = Couple.objects.filter(
+        user1=request.user
+    ).first()
+
+    if not couple:
+        couple = Couple.objects.filter(
+            user2=request.user
+        ).first()
+
+    room, created = WatchRoom.objects.get_or_create(
+        couple=couple
+    )
+
+    if request.method == "POST":
+        room.youtube_url = request.POST.get("youtube_url")
+        room.save()
+
+    video_id = None
+
+    if room.youtube_url:
+        match = re.search(
+    r"(?:v=|youtu\.be/|embed/)([A-Za-z0-9_-]{11})",
+    room.youtube_url
+)
+
+        if match:
+            video_id = match.group(1)
+
+    print("VIDEO ID:", video_id)
+
+    search_url = None
+
+    if request.GET.get("search"):
+        query = request.GET.get("search")
+
+        search_url = (
+            "https://www.youtube.com/results?search_query="
+            + urllib.parse.quote(query)
+        )
+
+    return render(
+        request,
+        "watch.html",
+        {
+            "room": room,
+            "couple": couple,
+            "video_id": video_id,
+            "search_url": search_url,
         }
     )
